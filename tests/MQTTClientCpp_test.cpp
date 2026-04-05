@@ -9,22 +9,6 @@
 #include "MQTTClientCpp.h"
 
 
-#define TOPIC       "MQTT Examples"
-//#define PAYLOAD     "Hello World!"
-#define QOS         1
-#define TIMEOUT     10000L
-
-
-class mqttclient: public testing::Test{
-public:
-    //std::string uri = "tcp://test.mosquitto.org:1883";
-    //mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    
-
-};
-
-
-
 TEST(mqttclient, TestCreatingMqttClient){
     EXPECT_NO_THROW(mqtt::Client testClient2("tcp://test.mosquitto.org:1883", "ExampleClientPub"));
 }
