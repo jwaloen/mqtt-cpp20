@@ -100,6 +100,7 @@ int main() {
 - [x] Establish memory-safe C++ wrapper base
 - [x] Implement Pimpl idiom for ABI stability
 - [x] CI/CD test pipeline integration
+- [x] Static Analysis
 - [ ] Implement callbacks via `std::function` for topic subscriptions
 - [ ] User options similar to C library
 - [ ] Improved CMakeLists.txt (separate builds)
