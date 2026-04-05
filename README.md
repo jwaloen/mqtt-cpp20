@@ -8,10 +8,10 @@ This project brings a highly robust and well tested legacy C MQTT library to mod
 
 ## ✨ Key Engineering Features
 
-As a portfolio project, this library was explicitly designed to enforce modern C++ best practices:
+As a portfolio project, this library was designed to enforce modern C++ best practices:
 
 * **Strict Memory Safety (RAII):** Completely eliminates raw pointer management (`malloc`/`free`) and dangling handles. Underlying C resources are managed exclusively via `std::unique_ptr` with custom, non-throwing deleters to guarantee leak-free execution.
-* **The Pimpl Idiom (Compilation Firewall):** The `MqttWrapper` utilizes the Pointer-to-Implementation (Pimpl) pattern. The underlying Paho C headers, structs, and macros are completely hidden from the user's inclusion path.
+* **The Pimpl Idiom (Compilation Firewall):** The `mqtt::Client` utilizes the Pointer-to-Implementation (Pimpl) pattern. The underlying Paho C headers, structs, and macros are completely hidden from the user's inclusion path.
 * **Modern CMake Architecture:** Uses `FetchContent` to seamlessly manage and link third-party dependencies (Paho C and GoogleTest) without requiring users to manually install them on their system.
 * **Comprehensive Test Coverage:** Validated using `GoogleTest` to ensure strict state management (e.g., preventing publishing before connection) and robust error handling.
 
@@ -101,5 +101,9 @@ int main() {
 - [x] Implement Pimpl idiom for ABI stability
 - [x] CI/CD test pipeline integration
 - [ ] Implement callbacks via `std::function` for topic subscriptions
+- [ ] User options similar to C library
+- [ ] Improved CMakeLists.txt (separate builds)
+- [ ] README guide on how to include in projects
+- [ ] Improve exceptions based on return code from C library
 - [ ] Make pub/sub asynchronous
 - [ ] Add TLS/SSL configuration options
