@@ -1,4 +1,4 @@
-# mqtt-cpp20 🚀
+# mqtt-cpp20
 
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.31+-success.svg)](https://cmake.org/)
