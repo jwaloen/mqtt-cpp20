@@ -99,7 +99,7 @@ int main() {
 - [x] Modern CMake project implementation
 - [x] Establish memory-safe C++ wrapper base
 - [x] Implement Pimpl idiom for ABI stability
-- [ ] CI/CD test pipeline integration
+- [x] CI/CD test pipeline integration
 - [ ] Implement callbacks via `std::function` for topic subscriptions
 - [ ] Make pub/sub asynchronous
 - [ ] Add TLS/SSL configuration options
