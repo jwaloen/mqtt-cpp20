@@ -43,3 +43,7 @@ TEST(mqttclient, TestDestructorEarly){
     testClient->connect();
     EXPECT_NO_THROW(delete testClient);
 }
+
+TEST(mqttclient, ForceFailedTestToTestGithubActionsDeleteAfter){
+    EXPECT_NO_THROW(mqtt::Client testClient2("http://test.mosquitto.org:1883", "ExampleClientPub"), std::runtime_error);
+} 
