@@ -43,3 +43,33 @@ TEST(mqttclient, TestDestructorEarly){
     testClient->connect();
     EXPECT_NO_THROW(delete testClient);
 }
+
+TEST(mqttclient, TestMultipleConnect){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.connect();
+    EXPECT_NO_THROW(testClient.connect(););
+}
+
+TEST(mqttclient, TestMultiplePublish){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.connect();
+    testClient.publish("MQTT Examples", "Hello World1!");
+    EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World2!"));
+}
+
+TEST(mqttclient, TestPublishAfterDisconnect){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.connect();
+    testClient.publish("MQTT Examples", "Hello World1!");
+    testClient.disconnect();
+    EXPECT_THROW(testClient.publish("MQTT Examples", "Hello World2!"), std::runtime_error);
+}
+
+TEST(mqttclient, TestConnectThenPublishThenDisconnectThenConnectThenPublish){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.connect();
+    testClient.publish("MQTT Examples", "Hello World1!");
+    testClient.disconnect();
+    testClient.connect();
+    EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World2!"));
+}

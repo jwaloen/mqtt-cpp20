@@ -25,6 +25,7 @@ namespace mqtt{
                 MQTTClient_deliveryToken token;
                 std::string m_uri;
                 std::string m_clientId;
+                bool m_connected = false;
         };
 
         Client::Client(const std::string& uri, const std::string& clientId) : pImpl(std::make_unique<Impl>(uri, clientId)){
@@ -56,6 +57,7 @@ namespace mqtt{
                 else {
                         throw std::runtime_error("The saved client is lost.\n");
                 }
+                pImpl->m_connected = true;
         }
 
         void Client::publish(const std::string& topic, const std::string& msg){
@@ -66,7 +68,7 @@ namespace mqtt{
                 pImpl->pubmsg.qos = 1;
                 pImpl->pubmsg.retained = 0;
 
-                if (pImpl->client){
+                if (pImpl->m_connected){
                         MQTTClient rp = pImpl->client.get();
                         if ((rc = MQTTClient_publishMessage(rp, topic.c_str(), &pImpl->pubmsg, &pImpl->token)) != MQTTCLIENT_SUCCESS)
                         {
@@ -76,13 +78,13 @@ namespace mqtt{
                         rc = MQTTClient_waitForCompletion(rp, pImpl->token, 10000L);
                 }
                 else {
-                        throw std::runtime_error("The saved client is lost.\n");
+                        throw std::runtime_error("Cannot publish before we are connected to a client\n");
                 }
         }
 
         void Client::disconnect(){
                 int rc = 0;
-                if (pImpl->client){
+                if (pImpl->m_connected){
                         MQTTClient rp = pImpl->client.get();
 
                         if ((rc = MQTTClient_disconnect(rp, 10000)) != MQTTCLIENT_SUCCESS){
@@ -90,8 +92,9 @@ namespace mqtt{
                         }
                 }
                 else {
-                        throw std::runtime_error("The saved client is lost.\n");
+                        throw std::runtime_error("Cannot disconnect from client because it is not connected.\n");
                 }
+                pImpl->m_connected = false;
         }
 
 }
