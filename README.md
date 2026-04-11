@@ -103,6 +103,7 @@ int main() {
 - [x] Static Analysis
 - [x] Connection Status Tracking
 - [ ] Implement callbacks via `std::function` for topic subscriptions
+- [ ] Force initializations to avoid "bad" states (data loss)
 - [ ] User options similar to C library
 - [ ] Improved CMakeLists.txt (separate builds)
 - [ ] README guide on how to include in projects
@@ -110,3 +111,8 @@ int main() {
 - [ ] Test against own MQTT server, not test.mosquitto.org
 - [ ] Make pub/sub asynchronous
 - [ ] Add TLS/SSL configuration options
+
+## Important Learning experiences
+- Pointer to Implementation is how I avoid including the C library headers in my header file, which would break the encapsulation of the C code.
+- Static trampoline function can act as a C function when sent as a callback funtion.
+- 
