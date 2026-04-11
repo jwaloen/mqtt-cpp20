@@ -27,18 +27,18 @@ namespace mqtt{
                 std::string m_clientId;
                 bool m_connected = false;
 
-                std::function<void(std::string_view, std::string_view)> msgHandler;
+                std::function<void(std::string, std::string)> msgHandler;
 
                 static int m_msgarrvd_trampoline(void* context, char* topicName, int topicLen, MQTTClient_message* message){
                         auto* l_impl = static_cast<Impl*>(context);
 
                         size_t realTopicLen = (topicLen > 0) ? static_cast<size_t>(topicLen) : std::strlen(topicName);
 
-                        std::string_view topic(topicName, realTopicLen);
-                        std::string_view payload(static_cast<char*>(message->payload), message->payloadlen);
+                        std::string topic(topicName, realTopicLen);
+                        std::string payload(static_cast<char*>(message->payload), message->payloadlen);
 
                         if(l_impl->msgHandler){
-                                l_impl->msgHandler(topic, payload);
+                                l_impl->msgHandler(std::move(topic), std::move(payload));
                         }
 
                         MQTTClient_freeMessage(&message);
@@ -105,7 +105,7 @@ namespace mqtt{
                 }
         }
 
-        void Client::setCallbacks(std::function<void(std::string_view, std::string_view)> msgarrvd){
+        void Client::setCallbacks(std::function<void(std::string, std::string)> msgarrvd){
                 int rc = 0;
                 MQTTClient rp = pImpl->client.get();
                 pImpl->msgHandler = msgarrvd;

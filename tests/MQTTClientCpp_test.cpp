@@ -11,7 +11,7 @@
 class mqttclient_f: public testing::Test{
     public:
 
-    static void msgarrvd(std::string_view topic, std::string_view msg){
+    static void msgarrvd(std::string topic, std::string msg){
         std::cout <<"Topic: " << topic <<"\nMessage: " << msg << "\n";
     }
 
