@@ -102,8 +102,10 @@ int main() {
 - [x] CI/CD test pipeline integration
 - [x] Static Analysis
 - [x] Connection Status Tracking
-- [ ] Implement callbacks via `std::function` for topic subscriptions
-- [ ] Force initializations to avoid "bad" states (data loss)
+- [x] Implement callbacks via `std::function` for topic subscriptions
+- [x] Force initializations to avoid "bad" states (data loss)
+- [ ] Implement trampoline function for disconnect
+- [ ] Implement trampoline fundtion for delivery complete
 - [ ] User options similar to C library
 - [ ] Improved CMakeLists.txt (separate builds)
 - [ ] README guide on how to include in projects
