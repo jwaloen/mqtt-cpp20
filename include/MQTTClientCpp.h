@@ -12,7 +12,7 @@ namespace mqtt{
 
     class Client{
     public:
-        Client(std::string_view uri, std::string_view clientId);
+        Client(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler = nullptr);
         ~Client();
         Client(const Client&) = delete;
         Client& operator=(const Client&) = delete;

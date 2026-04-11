@@ -98,5 +98,5 @@ TEST_F(mqttclient_f, TestSubscribe){
 
 TEST_F(mqttclient_f, TestFailingsubscribeBeforeConnectToMosquittoOrg){
     mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    EXPECT_THROW(testClient.subscribe("MQTT Examples"), std::runtime_error);
+    EXPECT_THROW(testClient.subscribe("MQTT Examples"), std::logic_error);
 }

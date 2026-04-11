@@ -21,7 +21,7 @@ namespace mqtt{
         };
 
         struct Client::Impl{
-                Impl(std::string_view uri, std::string_view clientId) : m_uri(uri), m_clientId(clientId) {}
+                Impl(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler) : m_uri(uri), m_clientId(clientId), m_msgHandler(msgHandler) {}
                 std::unique_ptr<void, MqttClientDestructor> m_client = nullptr;
                 std::string m_uri;
                 std::string m_clientId;
@@ -47,9 +47,11 @@ namespace mqtt{
                 }
         };
 
-        Client::Client(std::string_view uri, std::string_view clientId) : pImpl(std::make_unique<Impl>(uri, clientId)){
+        Client::Client(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler) : pImpl(std::make_unique<Impl>(uri, clientId, msgHandler)){
                 int rc = 0;
+                pImpl->m_msgHandler = msgHandler;
                 MQTTClient rp = nullptr;
+
                 if ((rc = MQTTClient_create(&rp, pImpl->m_uri.c_str(), pImpl->m_clientId.c_str(), MQTTCLIENT_PERSISTENCE_NONE, nullptr)) != MQTTCLIENT_SUCCESS){
                         throw std::runtime_error("Failed to create MQTT Client with C library.\n");
                 }
@@ -72,7 +74,7 @@ namespace mqtt{
                         MQTTClient rp = pImpl->m_client.get();
                         if ((rc = MQTTClient_connect(rp, &conn_opts)) != MQTTCLIENT_SUCCESS)
                         {
-                                throw std::runtime_error("Failed to connect to MQTT Client with C library.\n");
+                                throw std::runtime_error("Failed to connect to MQTT Client with C library.");
                         }
                 }
                 else {
@@ -121,15 +123,18 @@ namespace mqtt{
                 int rc = 0;
                 MQTTClient rp = pImpl->m_client.get();
 
-                if (pImpl->m_connected){
-                        if ((rc = MQTTClient_subscribe(rp, topic.c_str(), 1)) != MQTTCLIENT_SUCCESS){
-                                throw std::runtime_error("Failed to subscribe, return code \n");
-                                rc = EXIT_FAILURE;
-                        }
-                }
-                else{
-                        throw std::runtime_error("Cannot subscribe before we are connected to a client\n");
+                if (!pImpl->m_connected){
+                        throw std::logic_error("Cannot subscribe before we are connected to a client.");
                 } 
+
+                if(!pImpl->m_msgHandler){
+                        throw std::logic_error("Cannot subscribe: Client was initialized in publish-only mode (no callback provided).");
+                }
+
+                if ((rc = MQTTClient_subscribe(rp, topic.c_str(), 1)) != MQTTCLIENT_SUCCESS){
+                        throw std::runtime_error("Failed to subscribe, return code.");
+                }
+
         }
 
         void Client::disconnect(){
