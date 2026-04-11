@@ -98,7 +98,7 @@ int main() {
 
 - [x] Modern CMake project implementation
 - [x] Establish memory-safe C++ wrapper base
-- [x] Implement Pimpl idiom for ABI stability
+- [x] Implement Pimpl idiom for encapsulation of C code
 - [x] CI/CD test pipeline integration
 - [x] Static Analysis
 - [x] Connection Status Tracking
@@ -117,4 +117,3 @@ int main() {
 ## Important Learning experiences
 - Pointer to Implementation is how I avoid including the C library headers in my header file, which would break the encapsulation of the C code.
 - Static trampoline function can act as a C function when sent as a callback funtion.
-- 
