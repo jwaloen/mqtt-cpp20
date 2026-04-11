@@ -1,9 +1,12 @@
 #include "MQTTClientCpp.h"
 #include "MQTTClient.h"
 #include <codecvt>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <functional>
 #include <stdexcept>
+#include <cstring>
 
 
 
@@ -18,7 +21,7 @@ namespace mqtt{
         };
 
         struct Client::Impl{
-                Impl(const std::string& uri, const std::string& clientId) : m_uri(uri), m_clientId(clientId) {}
+                Impl(std::string_view uri, std::string_view clientId) : m_uri(uri), m_clientId(clientId) {}
                 std::unique_ptr<void, MqttClientDestructor> client = nullptr;
                 MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
                 MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -26,9 +29,28 @@ namespace mqtt{
                 std::string m_uri;
                 std::string m_clientId;
                 bool m_connected = false;
+
+                std::function<void(std::string_view, std::string_view)> msgHandler;
+
+                static int m_msgarrvd_trampoline(void* context, char* topicName, int topicLen, MQTTClient_message* message){
+                        auto* l_impl = static_cast<Impl*>(context);
+
+                        size_t realTopicLen = (topicLen > 0) ? static_cast<size_t>(topicLen) : std::strlen(topicName);
+
+                        std::string_view topic(topicName, realTopicLen);
+                        std::string_view payload(static_cast<char*>(message->payload), message->payloadlen);
+
+                        if(l_impl->msgHandler){
+                                l_impl->msgHandler(topic, payload);
+                        }
+
+                        MQTTClient_freeMessage(&message);
+                        MQTTClient_free(topicName);
+                        return 1;
+                }
         };
 
-        Client::Client(const std::string& uri, const std::string& clientId) : pImpl(std::make_unique<Impl>(uri, clientId)){
+        Client::Client(std::string_view uri, std::string_view clientId) : pImpl(std::make_unique<Impl>(uri, clientId)){
                 int rc = 0;
                 MQTTClient rp = nullptr;
                 if ((rc = MQTTClient_create(&rp, pImpl->m_uri.c_str(), pImpl->m_clientId.c_str(), MQTTCLIENT_PERSISTENCE_NONE, nullptr)) != MQTTCLIENT_SUCCESS){
@@ -80,6 +102,33 @@ namespace mqtt{
                 else {
                         throw std::runtime_error("Cannot publish before we are connected to a client\n");
                 }
+        }
+
+        void Client::setCallbacks(std::function<void(std::string_view, std::string_view)> msgarrvd){
+                int rc = 0;
+                MQTTClient rp = pImpl->client.get();
+                pImpl->msgHandler = msgarrvd;
+
+                
+                if ((rc = MQTTClient_setCallbacks(rp, pImpl.get(), nullptr, pImpl->m_msgarrvd_trampoline, nullptr)) != MQTTCLIENT_SUCCESS){
+                        throw std::runtime_error("Failed to set callbacks\n");
+                }
+                
+        }
+
+        void Client::subscribe(const std::string& topic){
+                int rc = 0;
+                MQTTClient rp = pImpl->client.get();
+
+                if (pImpl->m_connected){
+                        if ((rc = MQTTClient_subscribe(rp, topic.c_str(), 1)) != MQTTCLIENT_SUCCESS){
+                                throw std::runtime_error("Failed to subscribe, return code \n");
+                                rc = EXIT_FAILURE;
+                        }
+                }
+                else{
+                        throw std::runtime_error("Cannot subscribe before we are connected to a client\n");
+                } 
         }
 
         void Client::disconnect(){

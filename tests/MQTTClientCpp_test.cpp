@@ -8,6 +8,16 @@
 #include "MQTTClient.h"
 #include "MQTTClientCpp.h"
 
+class mqttclient_f: public testing::Test{
+    public:
+
+    static void msgarrvd(std::string_view topic, std::string_view msg){
+        std::cout <<"Topic: " << topic <<"\nMessage: " << msg << "\n";
+    }
+
+
+};
+
 
 TEST(mqttclient, TestCreatingMqttClient){
     EXPECT_NO_THROW(mqtt::Client testClient2("tcp://test.mosquitto.org:1883", "ExampleClientPub"));
@@ -72,4 +82,21 @@ TEST(mqttclient, TestConnectThenPublishThenDisconnectThenConnectThenPublish){
     testClient.disconnect();
     testClient.connect();
     EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World2!"));
+}
+
+TEST_F(mqttclient_f, TestSetCallbacks){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    EXPECT_NO_THROW(testClient.setCallbacks(msgarrvd));
+}
+
+TEST_F(mqttclient_f, TestSubscribe){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.setCallbacks(msgarrvd);
+    testClient.connect();
+    EXPECT_NO_THROW(testClient.subscribe("MQTT Examples"));
+}
+
+TEST_F(mqttclient_f, TestFailingsubscribeBeforeConnectToMosquittoOrg){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    EXPECT_THROW(testClient.subscribe("MQTT Examples"), std::runtime_error);
 }
