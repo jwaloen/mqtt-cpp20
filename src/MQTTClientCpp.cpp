@@ -28,6 +28,8 @@ namespace mqtt{
                 bool m_connected = false;
 
                 std::function<void(std::string, std::string)> m_msgHandler;
+                std::function<void(int)> m_deliveryComplete;
+                std::function<void(void)> m_connLost;
 
                 static int m_msgarrvd_trampoline(void* context, char* topicName, int topicLen, MQTTClient_message* message){
                         auto* l_impl = static_cast<Impl*>(context);
@@ -44,6 +46,26 @@ namespace mqtt{
                         MQTTClient_freeMessage(&message);
                         MQTTClient_free(topicName);
                         return 1;
+                }
+
+                static void m_deliveryComplete_trampoline(void *context, MQTTClient_deliveryToken dt){
+                        auto* l_impl = static_cast<Impl*>(context);
+
+                        if(l_impl->m_deliveryComplete){
+                                l_impl->m_deliveryComplete(dt);
+                        }
+                }
+
+                static void m_connLost_trampoline(void *context, char *cause){
+                        auto* l_impl = static_cast<Impl*>(context);
+
+                        // From the MTTQClient.h documentation: Currently, <i>cause</i> is always set to NULL.
+                        // Suppress warning unused parameter:
+                        (void)cause;
+
+                        if(l_impl->m_connLost){
+                                l_impl->m_connLost();
+                        }
                 }
         };
 
