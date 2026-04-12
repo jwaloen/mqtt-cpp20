@@ -104,8 +104,8 @@ int main() {
 - [x] Connection Status Tracking
 - [x] Implement callbacks via `std::function` for topic subscriptions
 - [x] Force initializations to avoid "bad" states (data loss)
-- [ ] Implement trampoline function for disconnect
-- [ ] Implement trampoline fundtion for delivery complete
+- [x] Implement trampoline function for disconnect
+- [x] Implement trampoline fundtion for delivery complete
 - [ ] User options similar to C library
 - [ ] Improved CMakeLists.txt (separate builds)
 - [ ] README guide on how to include in projects
