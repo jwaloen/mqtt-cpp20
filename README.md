@@ -109,7 +109,7 @@ int main() {
 - [ ] User options similar to C library
 - [ ] Improved CMakeLists.txt (separate builds)
 - [ ] README guide on how to include in projects
-- [ ] Improve exceptions based on return code from C library
+- [x] Improve exceptions based on return code from C library
 - [ ] Test against own MQTT server, not test.mosquitto.org
 - [ ] Make pub/sub asynchronous
 - [ ] Add TLS/SSL configuration options
