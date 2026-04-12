@@ -134,7 +134,7 @@ namespace mqtt{
                         rc = MQTTClient_waitForCompletion(rp, token, 10000L);
                 }
                 else {
-                        throw std::runtime_error("Cannot publish before we are connected to a client.");
+                        throw std::logic_error("Cannot publish before we are connected to a client.");
                 }
         }       
 

@@ -1,97 +1,87 @@
-#include "gmock/gmock.h"
-
-#include <ostream>
-#include <stdexcept>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <gtest/gtest.h>
+#include <string>
+#include <chrono>
+#include <iostream>
 #include "MQTTClientCpp.h"
 
-class mqttclient_f: public testing::Test{
-    public:
-
-    static void msgarrvd(std::string topic, std::string msg){
-        std::cout <<"Topic: " << topic <<"\nMessage: " << msg << "\n";
-    }
-};
-
-
-TEST(mqttclient, TestCreatingMqttClient){
-    EXPECT_NO_THROW(mqtt::Client testClient2("tcp://test.mosquitto.org:1883", "ExampleClientPub"));
+// Guarantees the broker never drops our test connections:
+std::string getUniqueId(const std::string& base) {
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    return base + "_" + std::to_string(ms);
 }
 
-TEST(mqttclient, TestFailedCreatingMqttClient){
-    EXPECT_THROW(mqtt::Client testClient2("http://test.mosquitto.org:1883", "ExampleClientPub"), std::runtime_error);
+// ==============================================================================
+// CONNECTION TESTS
+// ==============================================================================
+
+TEST(MqttClientTest, TestCreatingMqttClient){
+    EXPECT_NO_THROW(mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("Test1")));
+}
+
+TEST(MqttClientTest, TestFailedCreatingMqttClient){
+    // Bad protocol scheme (http)
+    EXPECT_THROW(mqtt::Client client("http://test.mosquitto.org:1883", getUniqueId("Test2")), std::runtime_error);
 } 
 
-TEST(mqttclient, TestConnectionToMosquittoOrg){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    EXPECT_NO_THROW(testClient.connect());
+TEST(MqttClientTest, TestConnectionToMosquittoOrg){
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("Test3"));
+    EXPECT_NO_THROW(client.connect());
 }
 
-TEST(mqttclient, TestFailedConnectionToMosquittoOrg){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1800", "ExampleClientPub"};
-    EXPECT_THROW(testClient.connect(), std::runtime_error);
-}
-
-TEST(mqttclient, TestPublishToMosquittoOrg){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.connect();
-    EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World!"));
-}
-
-TEST(mqttclient, TestFailingPublishBeforeConnectToMosquittoOrg){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    EXPECT_THROW(testClient.publish("MQTT Examples", "Hello World!"), std::runtime_error);
-}
-
-TEST(mqttclient, TestDestructor){
+TEST(MqttClientTest, TestDestructorEarly){
     EXPECT_NO_THROW({
-        mqtt::Client client("tcp://test.mosquitto.org:1883", "TestDestruct");
+        mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestDestruct"));
         client.connect();
     });
 }
 
-TEST(mqttclient, TestMultipleConnect){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.connect();
-    EXPECT_NO_THROW(testClient.connect(););
+// ==============================================================================
+// PUBLISH TESTS
+// ==============================================================================
+
+TEST(MqttClientTest, TestPublishToMosquittoOrg){
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestPub1"));
+    client.connect();
+    EXPECT_NO_THROW(client.publish("TechTopic/Tests", "Hello World!"));
 }
 
-TEST(mqttclient, TestMultiplePublish){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.connect();
-    testClient.publish("MQTT Examples", "Hello World1!");
-    EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World2!"));
+TEST(MqttClientTest, TestFailingPublishBeforeConnect){
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestPub2"));
+    
+    EXPECT_THROW(client.publish("TechTopic/Tests", "Hello World!"), std::logic_error);
 }
 
-TEST(mqttclient, TestPublishAfterDisconnect){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.connect();
-    testClient.publish("MQTT Examples", "Hello World1!");
-    testClient.disconnect();
-    EXPECT_THROW(testClient.publish("MQTT Examples", "Hello World2!"), std::runtime_error);
+TEST(MqttClientTest, TestConnectPublishDisconnectReconnect){
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestLifecycle"));
+    
+    client.connect();
+    client.publish("TechTopic/Tests", "Message 1");
+    client.disconnect();
+    
+    EXPECT_THROW(client.publish("TechTopic/Tests", "Should Fail"), std::logic_error);
+    
+    client.connect();
+    EXPECT_NO_THROW(client.publish("TechTopic/Tests", "Message 2"));
 }
 
-TEST(mqttclient, TestConnectThenPublishThenDisconnectThenConnectThenPublish){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.connect();
-    testClient.publish("MQTT Examples", "Hello World1!");
-    testClient.disconnect();
-    testClient.connect();
-    EXPECT_NO_THROW(testClient.publish("MQTT Examples", "Hello World2!"));
-}
+// ==============================================================================
+// SUBSCRIBE & CALLBACK TESTS
+// ==============================================================================
 
-TEST_F(mqttclient_f, TestSubscribe){
+TEST(MqttClientTest, TestSubscribeWithLambda){
     mqtt::ClientCallbacks callbacks;
-    callbacks.msgHandler = msgarrvd;
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub", callbacks};
-    testClient.connect();
-    EXPECT_NO_THROW(testClient.subscribe("MQTT Examples"));
+    callbacks.msgHandler = [](std::string topic, std::string msg) {
+        std::cout << "Received on " << topic << ": " << msg << std::endl;
+    };
+
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestSub1"), std::move(callbacks));
+    client.connect();
+    
+    EXPECT_NO_THROW(client.subscribe("TechTopic/Tests"));
 }
 
-TEST_F(mqttclient_f, TestFailingSubscribeBeforeConnect){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    EXPECT_THROW(testClient.subscribe("MQTT Examples"), std::logic_error);
+TEST(MqttClientTest, TestFailingSubscribeBeforeConnect){
+    mqtt::Client client("tcp://test.mosquitto.org:1883", getUniqueId("TestSub2"));
+    EXPECT_THROW(client.subscribe("TechTopic/Tests"), std::logic_error);
 }
-
