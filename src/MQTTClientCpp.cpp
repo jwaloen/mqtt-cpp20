@@ -21,13 +21,15 @@ namespace mqtt{
         };
 
         struct Client::Impl{
-                Impl(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler) : m_uri(uri), m_clientId(clientId), m_msgHandler(msgHandler) {}
+                Impl(std::string_view uri, std::string_view clientId) : m_uri(uri), m_clientId(clientId) {}
                 std::unique_ptr<void, MqttClientDestructor> m_client = nullptr;
                 std::string m_uri;
                 std::string m_clientId;
                 bool m_connected = false;
 
                 std::function<void(std::string, std::string)> m_msgHandler;
+                std::function<void(void)> m_connLost;
+                std::function<void(int)> m_deliveryComplete;
 
                 static int m_msgarrvd_trampoline(void* context, char* topicName, int topicLen, MQTTClient_message* message){
                         auto* l_impl = static_cast<Impl*>(context);
@@ -45,11 +47,30 @@ namespace mqtt{
                         MQTTClient_free(topicName);
                         return 1;
                 }
+
+                static void m_deliveryComplete_trampoline(void *context, MQTTClient_deliveryToken dt){
+                        auto* l_impl = static_cast<Impl*>(context);
+
+                        if(l_impl->m_deliveryComplete){
+                                l_impl->m_deliveryComplete(dt);
+                        }
+                }
+
+                static void m_connLost_trampoline(void *context, char *cause){
+                        auto* l_impl = static_cast<Impl*>(context);
+
+                        // From the MTTQClient.h documentation: Currently, <i>cause</i> is always set to NULL.
+                        // Suppress warning unused parameter:
+                        (void)cause;
+
+                        if(l_impl->m_connLost){
+                                l_impl->m_connLost();
+                        }
+                }
         };
 
-        Client::Client(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler) : pImpl(std::make_unique<Impl>(uri, clientId, msgHandler)){
+        Client::Client(std::string_view uri, std::string_view clientId, ClientCallbacks callbacks) : pImpl(std::make_unique<Impl>(uri, clientId)){
                 int rc = 0;
-                pImpl->m_msgHandler = msgHandler;
                 MQTTClient rp = nullptr;
 
                 if ((rc = MQTTClient_create(&rp, pImpl->m_uri.c_str(), pImpl->m_clientId.c_str(), MQTTCLIENT_PERSISTENCE_NONE, nullptr)) != MQTTCLIENT_SUCCESS){
@@ -58,6 +79,15 @@ namespace mqtt{
                 pImpl->m_client.reset(rp);
                 if (pImpl->m_client == nullptr) {
                         throw std::runtime_error("Failed to store MQTT Client.\n");
+                }
+
+                pImpl->m_connLost = callbacks.connLost;
+                pImpl->m_msgHandler = callbacks.msgHandler;
+                pImpl->m_deliveryComplete = callbacks.deliveryComplete;
+
+
+                if ((rc = MQTTClient_setCallbacks(rp, pImpl.get(), pImpl->m_connLost_trampoline, pImpl->m_msgarrvd_trampoline, pImpl->m_deliveryComplete_trampoline)) != MQTTCLIENT_SUCCESS){
+                        throw std::runtime_error("Failed to set callbacks.");
                 }
         }
 
@@ -105,19 +135,7 @@ namespace mqtt{
                 else {
                         throw std::runtime_error("Cannot publish before we are connected to a client\n");
                 }
-        }
-
-        void Client::setCallbacks(std::function<void(std::string, std::string)> msgarrvd){
-                int rc = 0;
-                MQTTClient rp = pImpl->m_client.get();
-                pImpl->m_msgHandler = msgarrvd;
-
-                
-                if ((rc = MQTTClient_setCallbacks(rp, pImpl.get(), nullptr, pImpl->m_msgarrvd_trampoline, nullptr)) != MQTTCLIENT_SUCCESS){
-                        throw std::runtime_error("Failed to set callbacks\n");
-                }
-                
-        }
+        }       
 
         void Client::subscribe(const std::string& topic){
                 int rc = 0;

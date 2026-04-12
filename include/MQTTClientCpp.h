@@ -9,17 +9,21 @@
 
 
 namespace mqtt{
+    struct ClientCallbacks{
+        std::function<void(void)> connLost = nullptr;
+        std::function<void(std::string, std::string)> msgHandler = nullptr;
+        std::function<void(int)> deliveryComplete = nullptr;
+    };
 
     class Client{
     public:
-        Client(std::string_view uri, std::string_view clientId, std::function<void(std::string, std::string)> msgHandler = nullptr);
+        Client(std::string_view uri, std::string_view clientId, ClientCallbacks callbacks = {});
         ~Client();
         Client(const Client&) = delete;
         Client& operator=(const Client&) = delete;
 
         void connect();
         void publish(const std::string& topic, const std::string& msg);
-        void setCallbacks(std::function<void(std::string, std::string)> msgarrvd);
         void subscribe(const std::string& topic);
         void disconnect();
 
