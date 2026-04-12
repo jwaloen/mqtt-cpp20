@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31.6)
+cmake_minimum_required(VERSION 3.14.0)
 
 project(mqtt-cpp20 VERSION 0.5.0 LANGUAGES CXX C)
 

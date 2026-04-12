@@ -19,31 +19,52 @@ As a portfolio project, this library was designed to enforce modern C++ best pra
 
 ### Prerequisites
 * GCC with C++20 support
-* CMake 3.31+
+* CMake 3.14+
 * Git
 
-### Building the Library and Tests
+## Integration
 
-This project uses modern CMake. All dependencies (Eclipse Paho and GoogleTest) are downloaded automatically during the configuration step.
+This library requires **C++20** and **CMake 3.14+**. 
 
-```bash
-# 1. Clone the repository
-git clone [https://github.com/YOUR_USERNAME/mqtt-cpp20.git](https://github.com/YOUR_USERNAME/mqtt-cpp20.git)
-cd mqtt-cpp20
+Because `mqtt-cpp20` uses modern target-based CMake, it automatically fetches and firewalls its own internal C dependencies (Eclipse Paho). You do not need to install Paho on your system to use this wrapper.
 
-# 2. Configure the build
-cmake -B build
+There are two recommended ways to include this library in your project:
 
-# 3. Build the library and tests
-cmake --build build
+### Option 1: CMake FetchContent (Recommended)
+You can pull the library directly from GitHub during your CMake configuration step. Add the following to your project's `CMakeLists.txt`:
 
-# 4. Run the test suite
-cd build && ctest --output-on-failure
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+    mqtt-cpp20
+    GIT_REPOSITORY https://github.com/jwaloen/mqtt-cpp20.git
+    GIT_TAG        main
+)
+FetchContent_MakeAvailable(mqtt-cpp20)
+
+# Link it to your executable
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE mqtt-cpp20)
 ```
 
-## 💻 Usage Example
+### Option 2: Git Submodule
+If you prefer to vendor dependencies, you can add this repository as a Git submodule.
 
-Because the library utilizes the Pimpl idiom, including it in your project is incredibly clean. There are no C-style handles or manual teardown steps.
+1. Add the submodule to your project:
+   ```bash
+   git submodule add https://github.com/jwaloen/mqtt-cpp20.git third_party/mqtt-cpp20
+   ```
+2. Add it to your `CMakeLists.txt`:
+   ```cmake
+   add_subdirectory(third_party/mqtt-cpp20)
+
+   add_executable(my_app main.cpp)
+   target_link_libraries(my_app PRIVATE mqtt-cpp20)
+   ```
+
+### Quick Start Example
+Once linked, simply include the header and instantiate the client:
 
 ```cpp
 #include "MQTTClientCpp.h"
@@ -51,34 +72,54 @@ Because the library utilizes the Pimpl idiom, including it in your project is in
 
 int main() {
     try {
-        // 1. Resource Acquisition Is Initialization (RAII)
-        // Memory is safely allocated and configured in the constructor.
-        mqtt::Client client("tcp://test.mosquitto.org:1883", "MyModernCppClient");
-
-        // 2. Connect to the broker
-        std::cout << "Connecting to broker...\n";
+        mqtt::Client client("tcp://test.mosquitto.org:1883", "MyUniqueClientID");
         client.connect();
-
-        // 3. Publish a message
-        std::string topic = "sensors/temperature";
-        std::string payload = "23.5C";
         
-        std::cout << "Publishing to " << topic << "...\n";
-        client.publish(topic, payload);
-
-        // 4. Disconnect gracefully
+        client.publish("MyTopic/Telemetry", "System Online");
+        std::cout << "Message published successfully.\n";
+        
         client.disconnect();
-        std::cout << "Success!\n";
-
     } catch (const std::exception& e) {
-        std::cerr << "MQTT Error: " << e.what() << "\n";
-        return 1;
+        std::cerr << "MQTT Error: " << e.what() << '\n';
     }
-
-    // The destructor automatically cleans up the underlying C library handles,
-    // even if an exception was thrown and disconnect() was skipped.
     return 0;
 }
+```
+
+## Local Development
+
+If you are developing this library or running the test suite locally, you need a C++20 compatible compiler and CMake 3.14+.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/YOUR_GITHUB_USERNAME/mqtt-cpp20.git
+cd mqtt-cpp20
+```
+
+### 2. Build and Run Tests (Debug Mode)
+To compile the library with debug symbols and run the Google Test suite, you must explicitly enable the `BUILD_TESTING` flag.
+
+```bash
+# Configure the build directory for testing
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+
+# Compile the library and tests (-j uses multiple CPU cores for speed)
+cmake --build build -j 4
+
+# Execute the test suite
+cd build
+ctest --output-on-failure
+```
+
+### 3. Build for Production (Release Mode)
+To verify the library compiles perfectly for a production environment without the testing frameworks polluting the build, disable the testing flag.
+
+```bash
+# Configure a separate build directory for release
+cmake -B build_release -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+
+# Compile the highly-optimized static library
+cmake --build build_release -j 4
 ```
 
 ## 🏗️ Project Structure
@@ -108,7 +149,7 @@ int main() {
 - [x] Implement trampoline fundtion for delivery complete
 - [ ] User options similar to C library
 - [x] Improved CMakeLists.txt (separate builds)
-- [ ] README guide on how to include in projects
+- [x] README guide on how to include in projects
 - [x] Improve exceptions based on return code from C library
 - [ ] Test against own MQTT server, not test.mosquitto.org
 - [ ] Make pub/sub asynchronous
