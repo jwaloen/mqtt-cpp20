@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "MQTTClient.h"
 #include "MQTTClientCpp.h"
 
 class mqttclient_f: public testing::Test{
@@ -14,8 +13,6 @@ class mqttclient_f: public testing::Test{
     static void msgarrvd(std::string topic, std::string msg){
         std::cout <<"Topic: " << topic <<"\nMessage: " << msg << "\n";
     }
-
-
 };
 
 
@@ -48,10 +45,11 @@ TEST(mqttclient, TestFailingPublishBeforeConnectToMosquittoOrg){
     EXPECT_THROW(testClient.publish("MQTT Examples", "Hello World!"), std::runtime_error);
 }
 
-TEST(mqttclient, TestDestructorEarly){
-    mqtt::Client *testClient = new mqtt::Client("tcp://test.mosquitto.org:1883", "ExampleClientPub");
-    testClient->connect();
-    EXPECT_NO_THROW(delete testClient);
+TEST(mqttclient, TestDestructor){
+    EXPECT_NO_THROW({
+        mqtt::Client client("tcp://test.mosquitto.org:1883", "TestDestruct");
+        client.connect();
+    });
 }
 
 TEST(mqttclient, TestMultipleConnect){
