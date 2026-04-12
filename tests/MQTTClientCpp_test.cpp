@@ -86,17 +86,29 @@ TEST(mqttclient, TestConnectThenPublishThenDisconnectThenConnectThenPublish){
 
 TEST_F(mqttclient_f, TestSetCallbacks){
     mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    EXPECT_NO_THROW(testClient.setCallbacks(msgarrvd));
+    EXPECT_NO_THROW(testClient.setCallbacks());
 }
 
 TEST_F(mqttclient_f, TestSubscribe){
-    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
-    testClient.setCallbacks(msgarrvd);
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub", msgarrvd};
+    testClient.setCallbacks();
     testClient.connect();
     EXPECT_NO_THROW(testClient.subscribe("MQTT Examples"));
 }
 
-TEST_F(mqttclient_f, TestFailingsubscribeBeforeConnectToMosquittoOrg){
+TEST_F(mqttclient_f, TestFailingSubscribeBeforeConnect){
     mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
     EXPECT_THROW(testClient.subscribe("MQTT Examples"), std::logic_error);
 }
+
+TEST_F(mqttclient_f, TestSetCallbacksBeforeConnect){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    EXPECT_NO_THROW(testClient.setCallbacks());
+}
+
+TEST_F(mqttclient_f, TestFailingSetCallbacksAfterConnect){
+    mqtt::Client testClient{"tcp://test.mosquitto.org:1883", "ExampleClientPub"};
+    testClient.connect();
+    EXPECT_THROW(testClient.setCallbacks(), std::logic_error);
+}
+

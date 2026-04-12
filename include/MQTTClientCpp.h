@@ -19,7 +19,7 @@ namespace mqtt{
 
         void connect();
         void publish(const std::string& topic, const std::string& msg);
-        void setCallbacks(std::function<void(std::string, std::string)> msgarrvd);
+        void setCallbacks(std::function<void(void)> connLost = nullptr, std::function<void(int)> deliveryComplete = nullptr);
         void subscribe(const std::string& topic);
         void disconnect();
 

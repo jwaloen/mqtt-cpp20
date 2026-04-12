@@ -28,8 +28,8 @@ namespace mqtt{
                 bool m_connected = false;
 
                 std::function<void(std::string, std::string)> m_msgHandler;
-                std::function<void(int)> m_deliveryComplete;
                 std::function<void(void)> m_connLost;
+                std::function<void(int)> m_deliveryComplete;
 
                 static int m_msgarrvd_trampoline(void* context, char* topicName, int topicLen, MQTTClient_message* message){
                         auto* l_impl = static_cast<Impl*>(context);
@@ -127,16 +127,21 @@ namespace mqtt{
                 else {
                         throw std::runtime_error("Cannot publish before we are connected to a client\n");
                 }
-        }
+        }       
 
-        void Client::setCallbacks(std::function<void(std::string, std::string)> msgarrvd){
+        void Client::setCallbacks(std::function<void(void)> connLost, std::function<void(int)> deliveryComplete){
                 int rc = 0;
                 MQTTClient rp = pImpl->m_client.get();
-                pImpl->m_msgHandler = msgarrvd;
+                pImpl->m_connLost = connLost;
+                pImpl->m_deliveryComplete = deliveryComplete;
 
-                
-                if ((rc = MQTTClient_setCallbacks(rp, pImpl.get(), nullptr, pImpl->m_msgarrvd_trampoline, nullptr)) != MQTTCLIENT_SUCCESS){
-                        throw std::runtime_error("Failed to set callbacks\n");
+                if (!pImpl->m_connected){
+                        if ((rc = MQTTClient_setCallbacks(rp, pImpl.get(), pImpl->m_connLost_trampoline, pImpl->m_msgarrvd_trampoline, pImpl->m_deliveryComplete_trampoline)) != MQTTCLIENT_SUCCESS){
+                                throw std::runtime_error("Failed to set callbacks.");
+                        }
+                }
+                else{
+                        throw std::logic_error("Cannot set callbacks after connected. Make sure .setCallbacks() are called before .connect().");
                 }
                 
         }
