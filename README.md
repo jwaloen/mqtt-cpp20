@@ -92,7 +92,7 @@ If you are developing this library or running the test suite locally, you need a
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/mqtt-cpp20.git
+git clone https://github.com/jwaloen/mqtt-cpp20.git
 cd mqtt-cpp20
 ```
 
@@ -154,7 +154,3 @@ cmake --build build_release -j 4
 - [ ] Test against own MQTT server, not test.mosquitto.org
 - [ ] Make pub/sub asynchronous
 - [ ] Add TLS/SSL configuration options
-
-## Important Learning experiences
-- Pointer to Implementation is how I avoid including the C library headers in my header file, which would break the encapsulation of the C code.
-- Static trampoline function can act as a C function when sent as a callback funtion.
